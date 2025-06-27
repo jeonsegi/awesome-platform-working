@@ -1,64 +1,44 @@
-import * as React from "react"
+import { useState, useCallback } from "react"
 
-type ToastProps = {
-  title?: string;
-  description?: string;
-  variant?: "default" | "destructive";
+export interface Toast {
+  id: string
+  title?: string
+  description?: string
+  variant?: "default" | "destructive"
+  duration?: number
 }
 
-let toastCount = 0;
+let toastCounter = 0
 
-function genId() {
-  toastCount = (toastCount + 1) % Number.MAX_SAFE_INTEGER
-  return toastCount.toString()
-}
+export function useToast() {
+  const [toasts, setToasts] = useState<Toast[]>([])
 
-type Toast = ToastProps & { id: string }
-
-const listeners: Array<(toasts: Toast[]) => void> = []
-let memoryToasts: Toast[] = []
-
-function dispatch(toasts: Toast[]) {
-  memoryToasts = toasts
-  listeners.forEach((listener) => {
-    listener(memoryToasts)
-  })
-}
-
-function toast(props: ToastProps) {
-  const id = genId()
-  const newToast = { ...props, id }
-  
-  dispatch([...memoryToasts, newToast])
-  
-  // Auto remove after 5 seconds
-  setTimeout(() => {
-    dispatch(memoryToasts.filter(t => t.id !== id))
-  }, 5000)
-  
-  return { id }
-}
-
-function useToast() {
-  const [toasts, setToasts] = React.useState<Toast[]>(memoryToasts)
-
-  React.useEffect(() => {
-    listeners.push(setToasts)
-    return () => {
-      const index = listeners.indexOf(setToasts)
-      if (index > -1) {
-        listeners.splice(index, 1)
-      }
+  const toast = useCallback(({ title, description, variant = "default", duration = 5000 }: Omit<Toast, "id">) => {
+    const id = (++toastCounter).toString()
+    const newToast: Toast = { id, title, description, variant, duration }
+    
+    setToasts((currentToasts) => [...currentToasts, newToast])
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== id))
+      }, duration)
     }
+    
+    return id
+  }, [])
+
+  const dismiss = useCallback((toastId?: string) => {
+    setToasts((currentToasts) => 
+      toastId 
+        ? currentToasts.filter((toast) => toast.id !== toastId)
+        : []
+    )
   }, [])
 
   return {
-    toasts,
     toast,
-    dismiss: (toastId: string) => {
-      dispatch(memoryToasts.filter(t => t.id !== toastId))
-    },
+    dismiss,
+    toasts
   }
 }
-
-export { useToast, toast }
