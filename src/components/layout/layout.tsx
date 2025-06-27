@@ -1,158 +1,230 @@
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useLocation } from "wouter";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { 
+  Home, 
   Package, 
-  FileText, 
   ShoppingCart, 
-  MessageSquare, 
+  FileText, 
+  Users, 
   User, 
   Settings, 
   LogOut,
-  Shield,
   BookOpen,
-  Crown
-} from "lucide-react";
+  Building,
+  Menu,
+  X
+} from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
-export default function Layout({ children }: LayoutProps) {
-  const { user, logout } = useAuth();
-  const [location, setLocation] = useLocation();
+export function Layout({ children }: LayoutProps) {
+  const { user, logout } = useAuth()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  const menuItems = [
-    { name: "제품 카탈로그", path: "/products", icon: Package },
-    { name: "주문 관리", path: "/orders", icon: ShoppingCart },
-    { name: "마케팅 자료실", path: "/content", icon: FileText },
-    { name: "셀러 커뮤니티", path: "/community", icon: MessageSquare },
-    { name: "셀러 이용방법", path: "/guide", icon: BookOpen },
-  ];
+  const navigation = [
+    { name: "대시보드", href: "/", icon: Home },
+    { name: "제품 카탈로그", href: "/products", icon: Package },
+    { name: "주문 관리", href: "/orders", icon: ShoppingCart },
+    { name: "마케팅 자료실", href: "/content", icon: FileText },
+    { name: "셀러 커뮤니티", href: "/community", icon: Users },
+    { name: "셀러 이용방법", href: "/guide", icon: BookOpen },
+  ]
 
-  const sellerMenuItems = [
-    { name: "마이페이지", path: "/my-page", icon: User },
-  ];
+  const userNavigation = [
+    { name: "마이페이지", href: "/my-page", icon: User },
+  ]
 
-  const adminMenuItems = user?.role === 'admin' ? [
-    { name: "관리자", path: "/admin", icon: Shield },
-  ] : [];
+  const adminNavigation = user?.role === 'admin' ? [
+    { name: "관리자 패널", href: "/admin", icon: Settings },
+  ] : []
 
-  const currentTier = user?.role === 'admin' ? 'ADMIN' : 'PREMIUM';
-  const marginRate = user?.role === 'admin' ? 'N/A' : '40%';
+  const corporateNavigation = [
+    { name: "기업 등록 신청", href: "/corporate-application", icon: Building },
+  ]
+
+  const getTierColor = (tier: string) => {
+    const colors = {
+      "브론즈": "bg-amber-600",
+      "실버": "bg-gray-400", 
+      "골드": "bg-yellow-500",
+      "프리미엄": "bg-purple-600"
+    }
+    return colors[tier as keyof typeof colors] || "bg-gray-400"
+  }
+
+  const handleLogout = () => {
+    logout()
+    window.location.href = "/"
+  }
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#FAFAFA' }}>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile sidebar overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 shadow-sm z-50">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" 
-                 style={{ backgroundColor: '#1C2331' }}>
-              <Crown className="h-6 w-6 text-white" />
-            </div>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between h-16 px-6 border-b">
+            <h1 className="text-xl font-bold text-gray-900">어썸커뮤니케이션즈</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto">
+            {/* Main Navigation */}
             <div>
-              <h1 className="font-heading text-lg font-bold" style={{ color: 'hsl(0, 0%, 15%)' }}>
-                Awesome
-              </h1>
-              <p className="text-xs text-gray-500">Communications</p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-4">
-          <div className="space-y-2">
-            {menuItems.map((item) => (
-              <Button
-                key={item.path}
-                variant={location === item.path ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setLocation(item.path)}
-                style={location === item.path ? { backgroundColor: '#1C2331' } : {}}
-              >
-                <item.icon className="mr-3 h-4 w-4" />
-                {item.name}
-              </Button>
-            ))}
-          </div>
-
-          <div className="mt-8">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              셀러 관리
-            </p>
-            <div className="space-y-2">
-              {sellerMenuItems.map((item) => (
-                <Button
-                  key={item.path}
-                  variant={location === item.path ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setLocation(item.path)}
-                  style={location === item.path ? { backgroundColor: '#1C2331' } : {}}
-                >
-                  <item.icon className="mr-3 h-4 w-4" />
-                  {item.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {adminMenuItems.length > 0 && (
-            <div className="mt-8">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                관리자
-              </p>
-              <div className="space-y-2">
-                {adminMenuItems.map((item) => (
-                  <Button
-                    key={item.path}
-                    variant={location === item.path ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setLocation(item.path)}
-                    style={location === item.path ? { backgroundColor: '#1C2331' } : {}}
+              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                메인 메뉴
+              </h3>
+              <div className="mt-2 space-y-1">
+                {navigation.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="group flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900"
                   >
-                    <item.icon className="mr-3 h-4 w-4" />
+                    <item.icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                     {item.name}
-                  </Button>
+                  </a>
                 ))}
               </div>
             </div>
-          )}
-        </nav>
 
-        <div className="p-4 border-t border-gray-200">
-          <Card className="p-3 mb-4 bg-gray-50">
-            <div className="text-center">
-              <div className="text-sm font-semibold text-gray-700">{user?.name}</div>
-              <div className="text-xs text-gray-500 mb-2">{user?.email}</div>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">
-                  {currentTier}
-                </span>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">
-                  {marginRate}
-                </span>
+            {/* User Navigation */}
+            <div>
+              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                셀러 관리
+              </h3>
+              <div className="mt-2 space-y-1">
+                {userNavigation.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="group flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <item.icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                    {item.name}
+                  </a>
+                ))}
               </div>
             </div>
-          </Card>
-          
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={logout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            로그아웃
-          </Button>
+
+            {/* Admin Navigation */}
+            {adminNavigation.length > 0 && (
+              <div>
+                <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  관리자
+                </h3>
+                <div className="mt-2 space-y-1">
+                  {adminNavigation.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      className="group flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      <item.icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                      {item.name}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Corporate Navigation */}
+            <div>
+              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                기업 서비스
+              </h3>
+              <div className="mt-2 space-y-1">
+                {corporateNavigation.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="group flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <item.icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </nav>
+
+          {/* User Info */}
+          {user && (
+            <div className="p-4 border-t">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-gray-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user.name}
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={`${getTierColor(user.tier)} text-white text-xs`}>
+                      {user.tier}
+                    </Badge>
+                    <span className="text-xs text-gray-500">
+                      {user.marginRate}%
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        <main className="p-8">
+      {/* Main content */}
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <div className="sticky top-0 z-10 bg-white shadow-sm border-b lg:hidden">
+          <div className="flex items-center justify-between h-16 px-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+            <h1 className="text-lg font-semibold text-gray-900">어썸커뮤니케이션즈</h1>
+            <div className="w-10" /> {/* Spacer */}
+          </div>
+        </div>
+
+        {/* Page content */}
+        <main className="p-6">
           {children}
         </main>
       </div>
     </div>
-  );
+  )
 }
